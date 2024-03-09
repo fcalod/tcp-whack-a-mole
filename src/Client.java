@@ -11,6 +11,7 @@ public class Client extends Thread {
     protected byte[] grid; //0: no mole, 1: mole
     protected int mode = 0; //0: user mode, 1: stress mode
     protected int score = 0;
+    GameUI game;
 
     public boolean tryLogin() {
         boolean loginSuccess = false;
@@ -81,8 +82,6 @@ public class Client extends Thread {
 
     // TODO: método click
 
-    // TODO: crear ui
-
     public void reqScoreUpdate () {
         try {
             Socket socket = new Socket("localhost", 1);
@@ -125,5 +124,12 @@ public class Client extends Thread {
             }
         }
 
+    }
+
+    public static void main(String[] args) {
+        Client client = new Client();
+        client.game = new GameUI();
+        
+        //client.start();
     }
 }
