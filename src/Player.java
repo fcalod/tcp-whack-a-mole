@@ -4,13 +4,13 @@ public class Player {
     //protected TCPConnection con;
     protected String usr;
     protected String pwd;
-    protected int points;
+    protected int score;
 
     public Player(String usr, String pwd) {
         //this.con = con;
         this.usr = usr;
         this.pwd = pwd;
-        this.points = 0;
+        this.score = 0;
     }
 
     public String getUsr() {
@@ -29,15 +29,15 @@ public class Player {
         this.pwd = pwd;
     }
 
-    public int getPoints() {
-        return points;
+    public int getScore() {
+        return score;
     }
 
-    public void incPoints() {
-        this.points++;
+    public void setScore(int score) {
+        this.score = score;
     }
 
     public void resetPoints() {
-        this.points = 0;
+        this.score= 0;
     }
 }
