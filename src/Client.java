@@ -1,7 +1,9 @@
 package src;
 
+import java.lang.reflect.Array;
 import java.net.*;
 import java.io.*;
+import java.util.Arrays;
 
 public class Client extends Thread {
     protected static String loginIp = "localhost";//"192.168.10.10";
@@ -55,9 +57,9 @@ public class Client extends Thread {
         return loginSuccess;
     }
 
-    public int listenMulticast () {
+    public int[] listenMulticast () {
         MulticastSocket mcastSocket = null;
-        int newMoleTile = -1;
+        int fromServer = -1, round = -1, newMoleTile = -1;
 
         try {
             InetAddress group = InetAddress.getByName(multicastIp); // destination multicast group
@@ -67,8 +69,18 @@ public class Client extends Thread {
 
             DatagramPacket messageIn = new DatagramPacket(buffer, buffer.length);
             mcastSocket.receive(messageIn);
-            newMoleTile = messageIn.getData()[1];
-            System.out.println(usr + " received mole at " + String.valueOf(newMoleTile));
+
+            byte[] mcastData = messageIn.getData();
+            String msg = new String(Arrays.copyOfRange(mcastData, 1, mcastData[0]+1)).trim();
+            round = mcastData[mcastData[0] + 1];
+            newMoleTile = mcastData[mcastData[0] + 2];
+
+            // Validates message source
+            if(msg.equals("server")) {
+                fromServer = 1;
+                System.out.println(usr + " received mole at " + String.valueOf(newMoleTile)
+                                       + " on round " + String.valueOf(round) + " from server");
+            }
 
             mcastSocket.leaveGroup(group);
         } catch (SocketException e) {
@@ -79,7 +91,8 @@ public class Client extends Thread {
             if(mcastSocket != null) mcastSocket.close();
         }
 
-        return newMoleTile;
+        int[] out = {fromServer, round, newMoleTile};
+        return out;
     }
 
     /*public void updateGrid () {
@@ -104,7 +117,7 @@ public class Client extends Thread {
     }
     */
 
-    public boolean reqScoreUpdate () {
+    public boolean reqScoreUpdate (int round) {
         boolean reqApproved = false;
 
         try {
@@ -112,11 +125,12 @@ public class Client extends Thread {
             ObjectOutputStream out = new ObjectOutputStream(socket.getOutputStream());
             ObjectInputStream in = new ObjectInputStream(socket.getInputStream());
 
-            String[] loginData = {usr, pwd};
-            out.writeObject(loginData);
+            String[] reqData = {String.valueOf(round), usr};
+            out.writeObject(reqData);
 
-            String[] hit = new String[4];
+            String[] hit;
             hit = (String[])in.readObject();
+            System.out.println(usr + " received response: " + Arrays.toString(hit));
 
             if(hit[0].equals("hit")) {
                 reqApproved = true;
@@ -136,35 +150,7 @@ public class Client extends Thread {
     }
 
     @Override
-    public void run() {
-        Socket socket = null;
-
-        try {
-            boolean loginSuccess = false;
-
-            while(true) {
-                if(loginSuccess){
-
-                }
-
-                // Listens for user click
-
-
-                // Listens for multicast
-
-
-                // Requests score change to server after hitting mole
-
-            }
-        } finally {
-            if (socket != null) try {
-                socket.close();
-            } catch (IOException e) {
-                System.out.println("close:" + e.getMessage());
-            }
-        }
-
-    }
+    public void run() {}
 
     public String getUsr() {
         return usr;
@@ -190,8 +176,8 @@ public class Client extends Thread {
         this.score = score;
     }
 
-    public static void main(String[] args) {
+    /*public static void main(String[] args) {
         Client client = new Client("User");
         client.start();
-    }
+    }*/
 }

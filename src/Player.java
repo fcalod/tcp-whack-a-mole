@@ -29,6 +29,8 @@ public class Player {
         this.pwd = pwd;
     }
 
+    public void updateScore() { score++; }
+
     public int getScore() {
         return score;
     }

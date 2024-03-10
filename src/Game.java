@@ -10,7 +10,8 @@ public class Game {
     protected LoginWindow loginWindow;
     protected GameWindow gameWindow;
     protected UpdateListener updateListener;
-    String mode;
+    protected String mode;
+    protected int round = 0;
     protected int moleTile = -1;
 
     public Game(String mode) {
@@ -53,12 +54,14 @@ public class Game {
     }
 
     public void hitMole(int clickedTile) {
+        System.out.println("Round in game: " + round);
+
         if(clickedTile == moleTile) {
-            boolean reqApproved = client.reqScoreUpdate();
+            boolean reqApproved = client.reqScoreUpdate(round);
 
             if(reqApproved) {
                 gameWindow.updateScore(moleTile);
-                client.setScore(client.getScore() + 1);
+                client.setScore(client.getScore());
             } else {
 
             }
@@ -75,6 +78,14 @@ public class Game {
             if(newMoleTile != -1)
                 gameWindow.updateMole(newMoleTile);
         }*/
+    }
+
+    public int getRound() {
+        return round;
+    }
+
+    public void setRound(int round) {
+        this.round = round;
     }
 
     private class LoginWindow extends JFrame {
@@ -144,7 +155,7 @@ public class Game {
     }
 
     protected static ImageIcon createImageIcon(String path, int width, int height) {
-        java.net.URL imgURL = Test.class.getResource(path);
+        java.net.URL imgURL = Game.class.getResource(path);
 
         if(imgURL != null) {
             if(width == 0 || height == 0)
@@ -167,13 +178,11 @@ public class Game {
         public int height = 140;
         JPanel panel;
         JButton[] board;
-        JLabel score; // TODO: mostrar el puntaje
+        JLabel scoreLabel; // TODO: mostrar el puntaje
         ImageIcon treeIcon;
         ImageIcon moleIcon;
         ImageIcon splatIcon;
         ImageIcon missIcon;
-
-        //ImageIcon background;
 
         public GameWindow(Game game) {
             super("Wakk-a-Mole");
@@ -186,6 +195,7 @@ public class Game {
             moleIcon = Game.createImageIcon("assets/mole_over_tree_1.png", 0, 0);
             splatIcon = Game.createImageIcon("assets/splat_over_tree.png", 0, 0);
             missIcon = Game.createImageIcon("assets/cross_over_tree.png", 0, 0);
+            scoreLabel = new JLabel("0");
 
             // Adds tiles
             board = new JButton[9];
@@ -231,15 +241,20 @@ public class Game {
                 g.drawImage(moleIcon.getImage(), 0, 0, null);
                 tile.setIcon(new ImageIcon(combined));
                 board[i] = tile;*/
+                } else {
+                    board[i].setIcon(treeIcon);
                 }
 
                 panel.add(board[i]);
             }
+
+            panel.repaint();
         }
 
         public void updateScore(int moleTile) {
-            score.setText( String.valueOf(Integer.valueOf(score.getText()) + 1) );
             board[moleTile].setIcon(splatIcon);
+            //scoreLabel.setText( String.valueOf(Integer.valueOf(scoreLabel.getText()) + 1) );
+            this.setTitle("Wakk-a-Mole | Score: " + game.client.getScore());
         }
 
         public void wrongMole(int clickedTile) {
@@ -257,10 +272,14 @@ public class Game {
         @Override
         public void run() {
             while(true) {
-                int newMoleTile = game.client.listenMulticast();
+                int[] updateData = game.client.listenMulticast();
+                int fromServer = updateData[0], round = updateData[1], newMoleTile = updateData[2];
 
-                if(0 <= newMoleTile && newMoleTile <= 8)
+                // If msg came from server, update mole and round
+                if(fromServer == 1 && 0 <= newMoleTile && newMoleTile <= 8)
                     game.updateMole(newMoleTile);
+                if(fromServer == 1)
+                    game.setRound(round);
             }
         }
     }
@@ -269,5 +288,3 @@ public class Game {
         Game game = new Game("User");
     }
 }
-
-
