@@ -6,7 +6,7 @@ import java.io.*;
 import java.util.Arrays;
 
 public class Client extends Thread {
-    protected static String loginIp = "localhost";//"192.168.10.10";
+    protected static String loginIp = "localhost";//"192.168.1.4"
     protected static int loginPort = 5050;
     protected static String tcpIp;//"192.168.10.10";
     protected static int tcpPort; // Port to send score update requests
@@ -114,11 +114,11 @@ public class Client extends Thread {
 
             if(hit[0].equals("hit")) {
                 reqApproved = true;
-                score++;
+                score = Integer.parseInt(hit[1]);
                 System.out.println(usr + " received a hit. New score is " + score);
             } else if(hit[0].equals("win")) {
                 reqApproved = true;
-                score++;
+                score = Integer.parseInt(hit[1]);
             }
         } catch (IOException e) {
             throw new RuntimeException(e);

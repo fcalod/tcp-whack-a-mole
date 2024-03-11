@@ -94,12 +94,13 @@ public class Server extends Thread {
                 int reqRound = Integer.valueOf(data[0]);
                 String usr = data[1];
                 System.out.println("Got " + data[0] + " from " + usr);
-                String[] msgOut = {""};
+                String[] msgOut = {"", ""};
 
                 if(reqRound == multicastServer.round && !claimedRounds[multicastServer.round]) {
                     claimedRounds[multicastServer.round] = true;
                     usrPlayerMap.get(usr).updateScore();
                     int score = usrPlayerMap.get(usr).getScore();
+                    msgOut[1] = String.valueOf(score);
 
                     if (score >= POINTS_TO_WIN) {
                         msgOut[0] = "win";
@@ -278,7 +279,7 @@ class MulticastServer extends Thread {
 
     public static byte[] createOutMsg(byte[] msg, byte[] winner) {
         // If there's a winner, send his usr
-        byte[] buffer = new byte[msg.length + winner.length + 2];;
+        byte[] buffer = new byte[msg.length + winner.length + 2];
         buffer[0] = (byte)msg.length;
 
         for(int i = 0; i < msg.length; i++)
@@ -294,7 +295,7 @@ class MulticastServer extends Thread {
 
     public static byte[] createOutMsg(byte[] msg, byte round, byte moleTile) {
         // If there's no winner yet, update moles
-        byte[] buffer = new byte[msg.length + 3];;
+        byte[] buffer = new byte[msg.length + 3];
         buffer[0] = (byte)msg.length;
 
         for(int i = 0; i < msg.length; i++)

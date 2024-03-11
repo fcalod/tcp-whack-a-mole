@@ -270,7 +270,7 @@ public class Game {
             //scoreLabel.setText( String.valueOf(Integer.valueOf(scoreLabel.getText()) + 1) );
             this.setTitle("Wakk-a-Mole | Score: " + game.client.getScore());
         }
-        
+
         public void wrongMole(int clickedTile) {
             board[clickedTile].setIcon(missIcon);
         }
