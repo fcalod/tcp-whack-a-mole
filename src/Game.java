@@ -1,9 +1,14 @@
 package src;
 
+import javax.sound.sampled.AudioInputStream;
+import javax.sound.sampled.AudioSystem;
+import javax.sound.sampled.Clip;
 import javax.swing.*;
 import javax.swing.border.Border;
 import java.awt.*;
 import java.awt.event.*;
+import java.util.ArrayList;
+import java.util.Random;
 
 public class Game {
     protected Client client;
@@ -11,7 +16,8 @@ public class Game {
     protected GameWindow gameWindow;
     protected UpdateListener updateListener;
     protected static final int WAIT_BETWEEN_ROUNDS = 5000;
-    protected String mode;
+    protected static final int STRESS_WAIT_CLICK = 50; // Waits before clicking again
+    protected String mode; // "User" or "Stress"
     protected int round = 0;
     protected int moleTile = -1;
     protected String winner = "";
@@ -20,10 +26,15 @@ public class Game {
         this.mode = mode;
         client = new Client(mode);
         client.start();
-        loginWindow = new LoginWindow(this);
-        gameWindow = new GameWindow(this);
         updateListener = new UpdateListener(this);
-        goToLogin();
+
+        if(mode.equals("User")) {
+            loginWindow = new LoginWindow(this);
+            gameWindow = new GameWindow(this);
+            goToLogin();
+        } else if(mode.equals("Stress")) {
+            tryLoginStress();
+        }
     }
 
     public void goToLogin() {
@@ -34,6 +45,7 @@ public class Game {
     public void goToGame() {
         loginWindow.setVisible(false);
         gameWindow.setVisible(true);
+        gameWindow.setTitle("Wakk-a-Mole | Score: " + client.getScore());
     }
 
     public void tryLogin(String usr, String pwd) {
@@ -55,6 +67,32 @@ public class Game {
         }
     }
 
+    public void tryLoginStress() {
+        // Generates a random username and empty password
+        String usr = generateRandomString(30), pwd = "";
+
+        boolean loginSuccess = client.tryLogin(usr, pwd);
+
+        if(loginSuccess) {
+            client.setUsr(usr);
+            client.setPwd(pwd);
+            updateListener.start();
+            hitMoleStress();
+        } else {
+            tryLoginStress();
+        }
+    }
+
+    private static String generateRandomString(int length){
+        Random rand = new Random();
+        return rand.ints(48,122)
+                .filter(i-> (i<57 || i>65) && (i <90 || i>97))
+                .mapToObj(i -> (char) i)
+                .limit(length)
+                .collect(StringBuilder::new, StringBuilder::append, StringBuilder::append)
+                .toString();
+    }
+
     public void updateMole(int newMoleTile) {
         moleTile = newMoleTile;
         gameWindow.updateMole(newMoleTile);
@@ -66,17 +104,37 @@ public class Game {
 
             if(reqApproved) {
                 gameWindow.updateScore(moleTile);
+                GameWindow.playSound("ouch.wav");
 
                 // If player won, end game here
-                if(winner.equals(client.getUsr()))
+                if(winner.equals(client.getUsr())) {
                     endGame();
+                    GameWindow.playSound("ganaste.wav");
+                }
             } else {
-                //TODO
+                //GameWindow.playSound("ganaste.wav");
             }
-
-
         } else {
             gameWindow.wrongMole(clickedTile);
+        }
+    }
+
+    public void hitMoleStress() {
+        while(true) {
+            Random rand = new Random();
+            int clickedTile = rand.nextInt(9); // Clicks a tile at random
+
+            if(clickedTile == moleTile) {
+                boolean reqApproved = client.reqScoreUpdate(round);
+
+                if(reqApproved) {
+                    // If player won, end game here
+                    if(winner.equals(client.getUsr()))
+                        endGameStress();
+                }
+            }
+
+            try{ Thread.sleep(STRESS_WAIT_CLICK); } catch (InterruptedException e){ e.printStackTrace(); }
         }
     }
 
@@ -89,9 +147,14 @@ public class Game {
         gameWindow.setTitle("Wakk-a-Mole | Score: 0");
     }
 
-    public String getWinner() {
-        return winner;
+    public void endGameStress() {
+        // Waits before starting another round
+        try{ Thread.sleep(WAIT_BETWEEN_ROUNDS); } catch (InterruptedException e){ e.printStackTrace(); }
+        winner = "";
+        client.setScore(0);
     }
+
+    public String getWinner() { return winner; }
 
     public void setRound(int round) { this.round = round; }
 
@@ -262,6 +325,7 @@ public class Game {
             }
 
             panel.repaint();
+            playSound("hey.wav");
         }
 
         public void updateScore(int moleTile) {
@@ -278,12 +342,27 @@ public class Game {
         public void showWinner() {
             String winnerMsg;
 
-            if(game.getWinner().equals(game.client.getUsr()))
+            if(game.getWinner().equals(game.client.getUsr())) {
                 winnerMsg = " | ¡Ganaste!";
-            else
+                playSound("ganaste.wav");
+            } else {
                 winnerMsg = " | Ganó " + winner;
+                playSound("perdiste.wav");
+            }
 
             this.setTitle("Wakk-a-Mole | Score: " + game.client.getScore() + winnerMsg);
+        }
+
+        public static synchronized void playSound(final String url) {
+            try {
+                Clip clip = AudioSystem.getClip();
+                AudioInputStream inputStream = AudioSystem.getAudioInputStream(
+                        ClientDeployer.class.getResourceAsStream("assets/" + url));
+                clip.open(inputStream);
+                clip.start();
+            } catch (Exception e) {
+                System.err.println(e.getMessage());
+            }
         }
     }
 
