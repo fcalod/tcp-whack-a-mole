@@ -57,9 +57,10 @@ public class Client extends Thread {
         return loginSuccess;
     }
 
-    public int[] listenMulticast () {
+    public String[] listenMulticast () {
         MulticastSocket mcastSocket = null;
-        int fromServer = -1, round = -1, newMoleTile = -1;
+        String msg = "", round = "-1", newMoleTile = "-1";
+        String winner = "";
 
         try {
             InetAddress group = InetAddress.getByName(multicastIp); // destination multicast group
@@ -71,15 +72,17 @@ public class Client extends Thread {
             mcastSocket.receive(messageIn);
 
             byte[] mcastData = messageIn.getData();
-            String msg = new String(Arrays.copyOfRange(mcastData, 1, mcastData[0]+1)).trim();
-            round = mcastData[mcastData[0] + 1];
-            newMoleTile = mcastData[mcastData[0] + 2];
+            msg = new String(Arrays.copyOfRange(mcastData, 1, mcastData[0]+1));
 
             // Validates message source
-            if(msg.equals("server")) {
-                fromServer = 1;
-                System.out.println(usr + " received mole at " + String.valueOf(newMoleTile)
-                                       + " on round " + String.valueOf(round) + " from server");
+            if(msg.equals("serverUpdate")) {
+                round = String.valueOf(mcastData[mcastData[0] + 1]);
+                newMoleTile = String.valueOf(mcastData[mcastData[0] + 2]);
+                System.out.println(usr + " received mole at " + newMoleTile + " on round " + round + " from server");
+            } else if(msg.equals("serverWinner")) {
+                int start = msg.length()+2, end = start+mcastData[start-1];
+                winner = new String(Arrays.copyOfRange(mcastData, start, end));
+                System.out.println(usr + " received winner " + winner);
             }
 
             mcastSocket.leaveGroup(group);
@@ -91,31 +94,9 @@ public class Client extends Thread {
             if(mcastSocket != null) mcastSocket.close();
         }
 
-        int[] out = {fromServer, round, newMoleTile};
+        String[] out = {msg, round, newMoleTile, winner};
         return out;
     }
-
-    /*public void updateGrid () {
-        try {
-            InetAddress group = InetAddress.getByName(multicastIp);
-            MulticastSocket socket = new MulticastSocket(multicastPort);
-            socket.joinGroup(group);
-            byte[] buf = new byte[1000];
-
-            System.out.println("Waiting for messages");
-            DatagramPacket messageIn = new DatagramPacket(buf, buf.length);
-            socket.receive(messageIn);
-
-            //TODO: update
-            //System.out.println(new String(messageIn.getData()));
-            //System.out.println("Message: " + new String(messageIn.getData()).trim() + " from: " + messageIn.getAddress());
-        } catch (SocketException e) {
-            System.out.println("Socket: " + e.getMessage());
-        } catch (Exception e) {
-            System.out.println(e.getMessage());
-        }
-    }
-    */
 
     public boolean reqScoreUpdate (int round) {
         boolean reqApproved = false;
@@ -130,15 +111,14 @@ public class Client extends Thread {
 
             String[] hit;
             hit = (String[])in.readObject();
-            System.out.println(usr + " received response: " + Arrays.toString(hit));
 
             if(hit[0].equals("hit")) {
                 reqApproved = true;
                 score++;
                 System.out.println(usr + " received a hit. New score is " + score);
             } else if(hit[0].equals("win")) {
-                // TODO
-                System.out.println(usr + " received a win");
+                reqApproved = true;
+                score++;
             }
         } catch (IOException e) {
             throw new RuntimeException(e);

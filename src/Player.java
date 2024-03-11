@@ -39,7 +39,7 @@ public class Player {
         this.score = score;
     }
 
-    public void resetPoints() {
+    public void resetScore() {
         this.score= 0;
     }
 }

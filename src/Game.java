@@ -10,9 +10,11 @@ public class Game {
     protected LoginWindow loginWindow;
     protected GameWindow gameWindow;
     protected UpdateListener updateListener;
+    protected static final int WAIT_BETWEEN_ROUNDS = 5000;
     protected String mode;
     protected int round = 0;
     protected int moleTile = -1;
+    protected String winner = "";
 
     public Game(String mode) {
         this.mode = mode;
@@ -35,6 +37,11 @@ public class Game {
     }
 
     public void tryLogin(String usr, String pwd) {
+        if(usr.isEmpty()) {
+            loginWindow.usrError();
+            return;
+        }
+
         boolean loginSuccess = client.tryLogin(usr, pwd);
 
         if(loginSuccess) {
@@ -54,39 +61,41 @@ public class Game {
     }
 
     public void hitMole(int clickedTile) {
-        System.out.println("Round in game: " + round);
-
         if(clickedTile == moleTile) {
             boolean reqApproved = client.reqScoreUpdate(round);
 
             if(reqApproved) {
                 gameWindow.updateScore(moleTile);
-                client.setScore(client.getScore());
-            } else {
 
+                // If player won, end game here
+                if(winner.equals(client.getUsr()))
+                    endGame();
+            } else {
+                //TODO
             }
+
 
         } else {
             gameWindow.wrongMole(clickedTile);
         }
     }
 
-    public void loop() {
-        /*while(true) {
-            int newMoleTile = client.listenMulticast();
-
-            if(newMoleTile != -1)
-                gameWindow.updateMole(newMoleTile);
-        }*/
+    public void endGame() {
+        gameWindow.showWinner();
+        // Waits before starting another round
+        try{ Thread.sleep(WAIT_BETWEEN_ROUNDS); } catch (InterruptedException e){ e.printStackTrace(); }
+        winner = "";
+        client.setScore(0);
+        gameWindow.setTitle("Wakk-a-Mole | Score: 0");
     }
 
-    public int getRound() {
-        return round;
+    public String getWinner() {
+        return winner;
     }
 
-    public void setRound(int round) {
-        this.round = round;
-    }
+    public void setRound(int round) { this.round = round; }
+
+    public void setWinner(String winner) { this.winner = winner; }
 
     private class LoginWindow extends JFrame {
         protected Game game;
@@ -147,6 +156,10 @@ public class Game {
             this.add(panel);
             this.pack();
             this.setLocationRelativeTo(null);
+        }
+
+        public void usrError() {
+            errLabel.setText("Empty username");
         }
 
         public void pwdError() {
@@ -253,12 +266,24 @@ public class Game {
 
         public void updateScore(int moleTile) {
             board[moleTile].setIcon(splatIcon);
+            panel.repaint();
             //scoreLabel.setText( String.valueOf(Integer.valueOf(scoreLabel.getText()) + 1) );
             this.setTitle("Wakk-a-Mole | Score: " + game.client.getScore());
         }
-
+        
         public void wrongMole(int clickedTile) {
             board[clickedTile].setIcon(missIcon);
+        }
+
+        public void showWinner() {
+            String winnerMsg;
+
+            if(game.getWinner().equals(game.client.getUsr()))
+                winnerMsg = " | ¡Ganaste!";
+            else
+                winnerMsg = " | Ganó " + winner;
+
+            this.setTitle("Wakk-a-Mole | Score: " + game.client.getScore() + winnerMsg);
         }
     }
 
@@ -272,14 +297,21 @@ public class Game {
         @Override
         public void run() {
             while(true) {
-                int[] updateData = game.client.listenMulticast();
-                int fromServer = updateData[0], round = updateData[1], newMoleTile = updateData[2];
+                String[] updateData = game.client.listenMulticast();
+                String msg = updateData[0], winner = updateData[3];
 
                 // If msg came from server, update mole and round
-                if(fromServer == 1 && 0 <= newMoleTile && newMoleTile <= 8)
-                    game.updateMole(newMoleTile);
-                if(fromServer == 1)
+                if(msg.equals("serverUpdate")) {
+                    int round = Integer.parseInt(updateData[1]), newMoleTile = Integer.parseInt(updateData[2]);
                     game.setRound(round);
+                    game.updateMole(newMoleTile);
+                } else if(msg.equals("serverWinner")) {
+                    game.setWinner(winner);
+
+                    // Ends the game if player lost; if player won, the TCP listener ends it
+                    if(!winner.equals(game.client.getUsr()))
+                        game.endGame();
+                }
             }
         }
     }
