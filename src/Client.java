@@ -6,7 +6,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 
 public class Client extends Thread {
-    protected static String loginIp = "148.205.133.147";//"localhost";//"192.168.1.4"
+    protected static String loginIp = "localhost";//"148.205.133.147";////"192.168.44.1"
     protected static int loginPort = 5050;
     protected static String tcpIp;//"192.168.10.10";
     protected static int tcpPort; // Port to send score update requests

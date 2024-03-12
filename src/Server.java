@@ -18,7 +18,7 @@ public class Server extends Thread {
     protected static final int loginPort = 5050;
     protected static final String tcpIp = "localhost";//"192.168.10.10";
     protected static final int tcpPort = 4040;
-    protected static final String multicastIp = "224.0.0.251";
+    protected static final String multicastIp = "224.0.0.251"; // "224.0.0.251"
     protected static final int multicastPort = 5353;
     protected static final int POINTS_TO_WIN = 5;
     protected static final int WAIT_BETWEEN_ROUNDS = 5000;

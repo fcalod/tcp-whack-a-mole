@@ -248,13 +248,13 @@ public class Game {
         }
     }
 
-    private class GameWindow extends JFrame {
+    private class GameWindow extends JFrame implements WindowListener {
         Game game;
         public int width = 120;
         public int height = 140;
         JPanel panel;
         JButton[] board;
-        JLabel scoreLabel; // TODO: mostrar el puntaje
+        JLabel scoreLabel; // TODO: quitar
         ImageIcon treeIcon;
         ImageIcon moleIcon;
         ImageIcon splatIcon;
@@ -292,14 +292,14 @@ public class Game {
                 panel.add(tile);
             }
 
-            //panel.getComponent(2);
-
             // Creates game window
-            this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+            //this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+            this.setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE); // Plays a sound on close
             this.setResizable(false);
             this.add(panel);
             this.pack();
             this.setLocationRelativeTo(null);
+            this.addWindowListener(this);
         }
 
         public void updateMole(int moleTile) {
@@ -364,6 +364,23 @@ public class Game {
                 System.err.println(e.getMessage());
             }
         }
+
+        public void windowOpened(WindowEvent e) {}
+
+        public void windowClosing(WindowEvent e) {
+            playSound("adios.wav");
+            System.exit(0);
+        }
+
+        public void windowClosed(WindowEvent e) {}
+
+        public void windowIconified(WindowEvent e) {}
+
+        public void windowDeiconified(WindowEvent e) {}
+
+        public void windowActivated(WindowEvent e) {}
+
+        public void windowDeactivated(WindowEvent e) {}
     }
 
     private class UpdateListener extends Thread {

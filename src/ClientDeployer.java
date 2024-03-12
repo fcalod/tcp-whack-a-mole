@@ -13,7 +13,9 @@ import java.util.stream.Collectors;
 import javax.sound.sampled.*;
 
 public class ClientDeployer {
-    public static String convertToCSV(String[] data) {
+    public static String formatCSV(String[] data) {
+        // TODO: regresar el renglón que se va a escribir en el csv, incluyendo las comas
+        // Considerar que un cliente puede no tener tiempos de respuesta en el juego (si nunca le atinó)
         return "";
     }
 
@@ -26,6 +28,8 @@ public class ClientDeployer {
 
         }
 
+        // TODO: escribir cada línea en un archivo. El código marca error. Lo saqué de aquí
+        // https://www.baeldung.com/java-csv
         try (PrintWriter pw = new PrintWriter(csvOutputFile)) {
             /*dataLines.stream()
                     .map(this::formatCSV)
@@ -34,19 +38,31 @@ public class ClientDeployer {
     }
 
     public static void main(String[] args) {
-        /*int NUM_CLIENTS = 10; // 50, 100, 500, 1000
+        int NUM_CLIENTS = 10; // 50, 100, 500, 1000
+        int NUM_TESTS = 10;
         Game[] games = new Game[NUM_CLIENTS];
+        Server server = new Server();
+        server.start();
 
         for(int i = 0; i < NUM_CLIENTS; i++)
             games[i] = new Game("Stress");
 
-        // Write results to file
-        try {
-            writeResults(games, 0);
-        } catch (IOException e) {
-            System.err.println(e.getMessage());
-        }*/
+        for(int i = 0; i < NUM_TESTS; i++) {
+            boolean gameOver = false;
+
+            while(!gameOver)
+                gameOver = server.isGameOver();
+
+            // Write results to file
+            try {
+                writeResults(games, i);
+            } catch (IOException e) {
+                System.err.println(e.getMessage());
+            }
+
+            // Resets clients (no sé si haga falta, lo puse por si acaso)
+            for(int j = 0; j < NUM_CLIENTS; j++)
+                games[i] = new Game("Stress");
+        }
     }
-
-
 }
