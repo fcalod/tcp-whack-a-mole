@@ -22,15 +22,14 @@ public class Server extends Thread {
     protected static final int multicastPort = 5353;
     protected static final int POINTS_TO_WIN = 5;
     protected static final int WAIT_BETWEEN_ROUNDS = 5000;
-    protected static final int MOLE_TIMER = 2000;
+    protected static final int MOLE_TIMER = 650;// 2000
     protected Map<String, Player> usrPlayerMap; // ip, port, usr, pwd, points
     protected boolean[] claimedRounds; // Keeps track of which rounds have been won by a player
     protected boolean gameOver = false;
     protected String winner = "";
-    //protected byte round = 1;
-    //protected byte moleTile = -1;
+    protected String mode = "";
 
-    public Server() {
+    public Server(String mode) {
         loginServer = new LoginServer(this);
         multicastServer = new MulticastServer(this);
         loginServer.start();
@@ -38,6 +37,7 @@ public class Server extends Thread {
         usrPlayerMap = new HashMap<>();
         claimedRounds = new boolean[1000];
         Arrays.fill(claimedRounds, false);
+        this.mode = mode;
     }
 
     public void notifyWinner() {
@@ -69,14 +69,19 @@ public class Server extends Thread {
         claimedRounds = new boolean[1000];
         Arrays.fill(claimedRounds, false);
 
-        for(Player player: usrPlayerMap.values())
-            player.resetScore();
+        if(mode.equals("User")) {
+            for(Player player: usrPlayerMap.values())
+                player.resetScore();
 
-        // Waits before starting another round
-        try{ Thread.sleep(WAIT_BETWEEN_ROUNDS); } catch (InterruptedException e){ e.printStackTrace(); }
+            // Waits before starting another round
+            try{ Thread.sleep(WAIT_BETWEEN_ROUNDS); } catch (InterruptedException e){ e.printStackTrace(); }
 
-        gameOver = false;
-        winner = "";
+            gameOver = false;
+            winner = "";
+        } else if(mode.equals("Stress")) {
+            for(Player player: usrPlayerMap.values())
+                System.out.println(player.getUsr() + " score: " + player.getScore());
+        }
     }
 
     @Override
@@ -112,7 +117,7 @@ public class Server extends Thread {
                     }
                 } else {
                     msgOut[0] = "miss";
-                    System.out.println(usr + " got a miss");
+                    //System.out.println(usr + " got a miss");
                 }
 
                 con.out.writeObject(msgOut);
@@ -127,16 +132,12 @@ public class Server extends Thread {
         }
     }
 
-    public boolean isGameOver() {
-        return gameOver;
-    }
+    public boolean isGameOver() { return gameOver; }
 
-    public String getWinner() {
-        return winner;
-    }
+    public String getWinner() { return winner; }
 
     public static void main(String[] args) {
-        Server server = new Server();
+        Server server = new Server("User");
         server.start();
     }
 }

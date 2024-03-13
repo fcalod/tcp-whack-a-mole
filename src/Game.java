@@ -10,7 +10,7 @@ import java.awt.event.*;
 import java.util.ArrayList;
 import java.util.Random;
 
-public class Game {
+public class Game extends Thread {
     protected Client client;
     protected LoginWindow loginWindow;
     protected GameWindow gameWindow;
@@ -33,7 +33,7 @@ public class Game {
             gameWindow = new GameWindow(this);
             goToLogin();
         } else if(mode.equals("Stress")) {
-            tryLoginStress();
+            //tryLoginStress();
         }
     }
 
@@ -95,7 +95,9 @@ public class Game {
 
     public void updateMole(int newMoleTile) {
         moleTile = newMoleTile;
-        gameWindow.updateMole(newMoleTile);
+
+        if(mode.equals("User"))
+            gameWindow.updateMole(newMoleTile);
     }
 
     public void hitMole(int clickedTile) {
@@ -120,7 +122,7 @@ public class Game {
     }
 
     public void hitMoleStress() {
-        while(true) {
+        while(winner.isEmpty()) {
             Random rand = new Random();
             int clickedTile = rand.nextInt(9); // Clicks a tile at random
 
@@ -148,10 +150,12 @@ public class Game {
     }
 
     public void endGameStress() {
-        // Waits before starting another round
+        double respTimeSum = client.getHitRespTimes().stream().reduce(0.0, Double::sum);
+        client.setAvgHitRespTime(respTimeSum / client.getHitRespTimes().size());
+        /*// Waits before starting another round
         try{ Thread.sleep(WAIT_BETWEEN_ROUNDS); } catch (InterruptedException e){ e.printStackTrace(); }
         winner = "";
-        client.setScore(0);
+        client.setScore(0);*/
     }
 
     public String getWinner() { return winner; }
@@ -406,10 +410,19 @@ public class Game {
 
                     // Ends the game if player lost; if player won, the TCP listener ends it
                     if(!winner.equals(game.client.getUsr()))
-                        game.endGame();
+                        if(game.mode.equals("User"))
+                            game.endGame();
+                        else if(game.mode.equals("Stress"))
+                            game.endGameStress();
                 }
             }
         }
+    }
+
+    @Override
+    public void run() {
+        if(mode.equals("Stress"))
+            tryLoginStress();
     }
 
     public static void main(String[] args) {

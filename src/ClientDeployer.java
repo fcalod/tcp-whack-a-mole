@@ -5,6 +5,7 @@ import com.sun.tools.javac.Main;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Random;
 import java.util.stream.Stream;
@@ -38,31 +39,39 @@ public class ClientDeployer {
     }
 
     public static void main(String[] args) {
-        int NUM_CLIENTS = 10; // 50, 100, 500, 1000
-        int NUM_TESTS = 10;
-        Game[] games = new Game[NUM_CLIENTS];
-        Server server = new Server();
-        server.start();
-
-        for(int i = 0; i < NUM_CLIENTS; i++)
-            games[i] = new Game("Stress");
+        int NUM_CLIENTS = 2; // 50, 100, 500, 1000
+        int NUM_TESTS = 1;
 
         for(int i = 0; i < NUM_TESTS; i++) {
+            Game[] games = new Game[NUM_CLIENTS];
+            Server server = new Server("Stress");
+            server.start();
+
+            for(int j = 0; j < NUM_CLIENTS; j++) {
+                games[j] = new Game("Stress");
+                games[j].start();
+            }
+
             boolean gameOver = false;
 
             while(!gameOver)
                 gameOver = server.isGameOver();
 
+            // Sleeps so server finishes first
+            try{ Thread.sleep(500); } catch (InterruptedException e){ e.printStackTrace(); }
+
+            for(int j = 0; j < NUM_CLIENTS; j++) {
+                System.out.println(games[j].client.getUsr());
+                System.out.println("Login time: " + games[j].client.getLoginRespTime() + "s");
+                System.out.println("Avg hit resp time: " + games[j].client.getAvgHitRespTime() + "s");
+            }
+
             // Write results to file
-            try {
+            /*try {
                 writeResults(games, i);
             } catch (IOException e) {
                 System.err.println(e.getMessage());
-            }
-
-            // Resets clients (no sé si haga falta, lo puse por si acaso)
-            for(int j = 0; j < NUM_CLIENTS; j++)
-                games[i] = new Game("Stress");
+            }*/
         }
     }
 }

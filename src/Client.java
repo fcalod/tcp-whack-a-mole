@@ -17,6 +17,7 @@ public class Client extends Thread {
     protected String mode; //User or stress
     protected int score = 0;
     protected double loginRespTime;
+    protected double avgHitRespTime;
     protected ArrayList<Double> hitRespTimes;
     protected int[] loginCounter = new int[2]; // [successes, failures]
 
@@ -72,7 +73,6 @@ public class Client extends Thread {
         MulticastSocket mcastSocket = null;
         String msg = "", round = "-1", newMoleTile = "-1";
         String winner = "";
-        long start, end; // Stress mode only
 
         try {
             InetAddress group = InetAddress.getByName(multicastIp); // destination multicast group
@@ -80,10 +80,8 @@ public class Client extends Thread {
             mcastSocket.joinGroup(group);
             byte[] buffer = new byte[1000];
 
-            start = System.nanoTime();
             DatagramPacket messageIn = new DatagramPacket(buffer, buffer.length);
             mcastSocket.receive(messageIn);
-            end = System.nanoTime();
 
             byte[] mcastData = messageIn.getData();
             msg = new String(Arrays.copyOfRange(mcastData, 1, mcastData[0]+1));
@@ -100,9 +98,6 @@ public class Client extends Thread {
             }
 
             mcastSocket.leaveGroup(group);
-
-            if(mode.equals("Stress"))
-                hitRespTimes.add((end - start)/1e9);
         } catch (SocketException e) {
             System.out.println("Socket: " + e.getMessage());
         } catch (IOException e) {
@@ -117,6 +112,7 @@ public class Client extends Thread {
 
     public boolean reqScoreUpdate (int round) {
         boolean reqApproved = false;
+        long start, end; // Stress mode only
 
         try {
             Socket socket = new Socket(tcpIp, tcpPort);
@@ -126,8 +122,10 @@ public class Client extends Thread {
             String[] reqData = {String.valueOf(round), usr};
             out.writeObject(reqData);
 
+            start = System.nanoTime();
             String[] hit;
             hit = (String[])in.readObject();
+            end = System.nanoTime();
 
             if(hit[0].equals("hit")) {
                 reqApproved = true;
@@ -137,6 +135,9 @@ public class Client extends Thread {
                 reqApproved = true;
                 score = Integer.parseInt(hit[1]);
             }
+
+            if(mode.equals("Stress"))
+                hitRespTimes.add((end - start)/1e9);
         } catch (IOException e) {
             throw new RuntimeException(e);
         } catch (ClassNotFoundException e) {
@@ -155,9 +156,15 @@ public class Client extends Thread {
 
     public double getLoginRespTime() { return loginRespTime; }
 
+    public ArrayList<Double> getHitRespTimes() { return hitRespTimes; }
+
+    public double getAvgHitRespTime() { return avgHitRespTime; }
+
     public void setUsr(String usr) { this.usr = usr; }
 
     public void setPwd(String pwd) { this.pwd = pwd; }
 
     public void setScore(int score) { this.score = score; }
+
+    public void setAvgHitRespTime(double avgHitRespTime) { this.avgHitRespTime = avgHitRespTime; }
 }
