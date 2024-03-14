@@ -7,7 +7,6 @@ import javax.swing.*;
 import javax.swing.border.Border;
 import java.awt.*;
 import java.awt.event.*;
-import java.util.ArrayList;
 import java.util.Random;
 
 public class Game extends Thread {
@@ -16,7 +15,7 @@ public class Game extends Thread {
     protected GameWindow gameWindow;
     protected UpdateListener updateListener;
     protected static final int WAIT_BETWEEN_ROUNDS = 5000;
-    protected static final int STRESS_WAIT_CLICK = 50; // Waits before clicking again
+    protected static final int STRESS_WAIT_CLICK = 500; // Waits before clicking again
     protected String mode; // "User" or "Stress"
     protected int round = 0;
     protected int moleTile = -1;
@@ -122,7 +121,7 @@ public class Game extends Thread {
     }
 
     public void hitMoleStress() {
-        while(winner.isEmpty()) {
+        while(true) {
             Random rand = new Random();
             int clickedTile = rand.nextInt(9); // Clicks a tile at random
 
@@ -152,6 +151,8 @@ public class Game extends Thread {
     public void endGameStress() {
         double respTimeSum = client.getHitRespTimes().stream().reduce(0.0, Double::sum);
         client.setAvgHitRespTime(respTimeSum / client.getHitRespTimes().size());
+        // Waits before starting next experiment
+        try{ Thread.sleep(1000); } catch (InterruptedException e){ e.printStackTrace(); }
         /*// Waits before starting another round
         try{ Thread.sleep(WAIT_BETWEEN_ROUNDS); } catch (InterruptedException e){ e.printStackTrace(); }
         winner = "";

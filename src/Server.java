@@ -20,16 +20,17 @@ public class Server extends Thread {
     protected static final int tcpPort = 4040;
     protected static final String multicastIp = "224.0.0.251"; // "224.0.0.251"
     protected static final int multicastPort = 5353;
-    protected static final int POINTS_TO_WIN = 5;
+    protected static final int POINTS_TO_WIN = 4;
     protected static final int WAIT_BETWEEN_ROUNDS = 5000;
-    protected static final int MOLE_TIMER = 650;// 2000
+    protected static final int MOLE_TIMER = 2000;// 2000
     protected Map<String, Player> usrPlayerMap; // ip, port, usr, pwd, points
     protected boolean[] claimedRounds; // Keeps track of which rounds have been won by a player
     protected boolean gameOver = false;
     protected String winner = "";
     protected String mode = "";
+    protected int numExp;
 
-    public Server(String mode) {
+    public Server(String mode, int numExp) {
         loginServer = new LoginServer(this);
         multicastServer = new MulticastServer(this);
         loginServer.start();
@@ -38,6 +39,7 @@ public class Server extends Thread {
         claimedRounds = new boolean[1000];
         Arrays.fill(claimedRounds, false);
         this.mode = mode;
+        this.numExp = numExp; // Stress mode only
     }
 
     public void notifyWinner() {
@@ -66,7 +68,7 @@ public class Server extends Thread {
         winner = usr;
         notifyWinner();
         multicastServer.reset();
-        claimedRounds = new boolean[1000];
+        claimedRounds = new boolean[100000];
         Arrays.fill(claimedRounds, false);
 
         if(mode.equals("User")) {
@@ -79,8 +81,17 @@ public class Server extends Thread {
             gameOver = false;
             winner = "";
         } else if(mode.equals("Stress")) {
-            for(Player player: usrPlayerMap.values())
+            for(Player player: usrPlayerMap.values()) {
                 System.out.println(player.getUsr() + " score: " + player.getScore());
+                player.resetScore();
+            }
+
+            /*numExp--;
+
+            if(numExp > 0) {
+                gameOver = false;
+                winner = "";
+            }*/
         }
     }
 
@@ -89,7 +100,8 @@ public class Server extends Thread {
         try {
             ServerSocket listenSocket = new ServerSocket(tcpPort);
 
-            while(true) {
+            //In stress mode, the game doesn't restart
+            while(!gameOver) {
                 Socket clientSocket = listenSocket.accept(); // Waits for a connection
                 TCPConnection con = new TCPConnection(clientSocket);
                 con.start();
@@ -98,7 +110,7 @@ public class Server extends Thread {
                 String[] data = (String[])con.in.readObject();
                 int reqRound = Integer.valueOf(data[0]);
                 String usr = data[1];
-                System.out.println("Got " + data[0] + " from " + usr);
+                //System.out.println("Got " + data[0] + " from " + usr);
                 String[] msgOut = {"", ""};
 
                 if(reqRound == multicastServer.round && !claimedRounds[multicastServer.round]) {
@@ -137,7 +149,7 @@ public class Server extends Thread {
     public String getWinner() { return winner; }
 
     public static void main(String[] args) {
-        Server server = new Server("User");
+        Server server = new Server("User", 0);
         server.start();
     }
 }
@@ -247,6 +259,9 @@ class MulticastServer extends Thread {
                 //moleTile = (byte)rand.nextInt(9);
                 round++;
 
+                if(round < 1)
+                    round = 1;
+
                 InetAddress group = InetAddress.getByName(Server.multicastIp); // destination multicast group
                 MulticastSocket socket = new MulticastSocket(Server.multicastPort);
                 socket.joinGroup(group);
@@ -261,7 +276,7 @@ class MulticastServer extends Thread {
                     DatagramPacket messageOut = new DatagramPacket(buffer, buffer.length, group, Server.multicastPort);
                     socket.send(messageOut);
                     System.out.println("========= ROUND " + round + " =========");
-                    System.out.println("Sent " + "[" + round + ", " + moleTile + "]" + " via multicast");
+                    //System.out.println("Sent " + "[" + round + ", " + moleTile + "]" + " via multicast");
 
                     // Waits before sending another mole
                     try { Thread.sleep(Server.MOLE_TIMER); } catch (InterruptedException e) { e.printStackTrace(); }

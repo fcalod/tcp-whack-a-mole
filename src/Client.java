@@ -51,8 +51,8 @@ public class Client extends Thread {
                 tcpPort = Integer.valueOf(conData[4]);
                 score = Integer.valueOf(conData[5]);
                 loginCounter[0]++;
-                System.out.println("Multicast = " + multicastIp + ":" + multicastPort + ". TCP = " +
-                                   tcpIp + ": " + tcpPort + ". Score =" + score + " received by " + usr);
+                //System.out.println("Multicast = " + multicastIp + ":" + multicastPort + ". TCP = " +
+                //                   tcpIp + ": " + tcpPort + ". Score =" + score + " received by " + usr);
             } else {
                 loginCounter[1]++;
                 System.out.println(usr + " could not login");
@@ -90,11 +90,11 @@ public class Client extends Thread {
             if(msg.equals("serverUpdate")) {
                 round = String.valueOf(mcastData[mcastData[0] + 1]);
                 newMoleTile = String.valueOf(mcastData[mcastData[0] + 2]);
-                System.out.println(usr + " received mole at " + newMoleTile + " on round " + round + " from server");
+                //System.out.println(usr + " received mole at " + newMoleTile + " on round " + round + " from server");
             } else if(msg.equals("serverWinner")) {
                 int from = msg.length()+2, to = from+mcastData[from-1];
                 winner = new String(Arrays.copyOfRange(mcastData, from, to));
-                System.out.println(usr + " received winner " + winner);
+                //System.out.println(usr + " received winner " + winner);
             }
 
             mcastSocket.leaveGroup(group);
@@ -130,7 +130,7 @@ public class Client extends Thread {
             if(hit[0].equals("hit")) {
                 reqApproved = true;
                 score = Integer.parseInt(hit[1]);
-                System.out.println(usr + " received a hit. New score is " + score);
+                //System.out.println(usr + " received a hit. New score is " + score);
             } else if(hit[0].equals("win")) {
                 reqApproved = true;
                 score = Integer.parseInt(hit[1]);
@@ -159,6 +159,8 @@ public class Client extends Thread {
     public ArrayList<Double> getHitRespTimes() { return hitRespTimes; }
 
     public double getAvgHitRespTime() { return avgHitRespTime; }
+
+    public int[] getLoginCounter() { return loginCounter; }
 
     public void setUsr(String usr) { this.usr = usr; }
 

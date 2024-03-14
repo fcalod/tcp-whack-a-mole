@@ -16,5 +16,6 @@
     <orderEntry type="library" name="javafx.media" level="project" />
     <orderEntry type="library" name="javafx.swing" level="project" />
     <orderEntry type="library" name="javafx.web" level="project" />
+    <orderEntry type="library" name="opencsv-5.9" level="project" />
   </component>
 </module>

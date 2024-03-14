@@ -1,50 +1,34 @@
 package src;
 
-import com.sun.tools.javac.Main;
-
-import java.io.File;
+import java.io.FileWriter;
 import java.io.IOException;
-import java.io.PrintWriter;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Random;
-import java.util.stream.Stream;
-import java.util.stream.Collectors;
 
-import javax.sound.sampled.*;
+import com.opencsv.CSVWriter;
 
 public class ClientDeployer {
-    public static String formatCSV(String[] data) {
-        // TODO: regresar el renglón que se va a escribir en el csv, incluyendo las comas
-        // Considerar que un cliente puede no tener tiempos de respuesta en el juego (si nunca le atinó)
-        return "";
-    }
+    public static void writeResults(Game[] games, double[] data) throws IOException {
+        String csvFile = "stress_" + games.length + ".csv";
+        CSVWriter cw = new CSVWriter(new FileWriter(csvFile));
+        String[] line = new String[data.length];
 
-    public static void writeResults(Game[] games, int id) throws IOException {
-        File csvOutputFile = new File("stress/" + games.length + "clients_" + id + ".csv");
+        for(int i = 0; i < data.length; i++)
+            line[i] = Double.toString(data[i]);
 
-        for(Game g: games) {
-            Client c = g.client;
-
-
-        }
-
-        // TODO: escribir cada línea en un archivo. El código marca error. Lo saqué de aquí
-        // https://www.baeldung.com/java-csv
-        try (PrintWriter pw = new PrintWriter(csvOutputFile)) {
-            /*dataLines.stream()
-                    .map(this::formatCSV)
-                    .forEach(pw::println);*/
-        }
+        cw.writeNext(line);
+        cw.close();
     }
 
     public static void main(String[] args) {
-        int NUM_CLIENTS = 2; // 50, 100, 500, 1000
+        int NUM_CLIENTS = 500; // 50, 100, 150, 500
         int NUM_TESTS = 1;
+        double avgLoginTime = 0.0, avgHitRespTime = 0.0, loginDev = 0.0, hitDev = 0.0, avgLoginScsRate = 0.0;
+        double[] stdDev = new double[NUM_TESTS];
+
+        Game[] games = new Game[NUM_CLIENTS];
+        Server server;// = new Server("Stress", NUM_TESTS);
 
         for(int i = 0; i < NUM_TESTS; i++) {
-            Game[] games = new Game[NUM_CLIENTS];
-            Server server = new Server("Stress");
+            server = new Server("Stress", NUM_TESTS);
             server.start();
 
             for(int j = 0; j < NUM_CLIENTS; j++) {
@@ -52,26 +36,61 @@ public class ClientDeployer {
                 games[j].start();
             }
 
-            boolean gameOver = false;
+            // Waits for game to end
+            try {
+                server.join();
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
 
-            while(!gameOver)
-                gameOver = server.isGameOver();
-
+            /*
             // Sleeps so server finishes first
-            try{ Thread.sleep(500); } catch (InterruptedException e){ e.printStackTrace(); }
+            try { Thread.sleep(500); } catch (InterruptedException e) { e.printStackTrace(); }*/
 
-            for(int j = 0; j < NUM_CLIENTS; j++) {
+            System.out.println("======= TEST " + i + " =======");
+
+            /*for(int j = 0; j < NUM_CLIENTS; j++) {
                 System.out.println(games[j].client.getUsr());
                 System.out.println("Login time: " + games[j].client.getLoginRespTime() + "s");
                 System.out.println("Avg hit resp time: " + games[j].client.getAvgHitRespTime() + "s");
+            }*/
+
+            double loginScsCount = 0.0, loginFailCount = 0.0, loginVar = 0.0, hitVar = 0.0;
+
+            for(Game game: games) {
+                avgLoginTime += game.client.getLoginRespTime();
+                avgHitRespTime += game.client.getAvgHitRespTime();
+                loginScsCount += game.client.getLoginCounter()[0];
+                loginFailCount += game.client.getLoginCounter()[1];
             }
 
-            // Write results to file
-            /*try {
-                writeResults(games, i);
-            } catch (IOException e) {
-                System.err.println(e.getMessage());
-            }*/
+            avgLoginTime /= NUM_CLIENTS;
+            avgHitRespTime /= NUM_CLIENTS;
+            avgLoginScsRate += (loginScsCount + 1) / (loginFailCount + 1);
+
+            for(Game game: games) {
+                loginVar += Math.pow(game.client.getLoginRespTime() - avgLoginTime, 2);
+                hitVar += Math.pow(game.client.getLoginRespTime() - avgHitRespTime, 2);
+            }
+
+            loginDev += Math.sqrt(loginVar/ NUM_CLIENTS);
+            hitDev += Math.sqrt(hitVar / NUM_CLIENTS);
         }
+
+        avgLoginTime /= NUM_TESTS;
+        avgHitRespTime /= NUM_TESTS;
+        avgLoginScsRate /= NUM_TESTS;
+        loginDev /= NUM_TESTS;
+        hitDev /= NUM_TESTS;
+        double[] data = {avgLoginTime, loginDev, avgHitRespTime, hitDev, avgLoginScsRate};
+
+        // Write results to file
+        try {
+            writeResults(games, data);
+        } catch (IOException e) {
+            System.err.println(e.getMessage());
+        }
+
+        System.out.println("DONE");
     }
 }
