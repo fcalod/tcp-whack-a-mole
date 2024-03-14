@@ -85,13 +85,6 @@ public class Server extends Thread {
                 System.out.println(player.getUsr() + " score: " + player.getScore());
                 player.resetScore();
             }
-
-            /*numExp--;
-
-            if(numExp > 0) {
-                gameOver = false;
-                winner = "";
-            }*/
         }
     }
 
@@ -256,7 +249,6 @@ class MulticastServer extends Thread {
                 int[] range = IntStream.rangeClosed(0, 8).toArray();
                 int[] filteredRange = Arrays.stream(range).filter(value -> value != moleTile).toArray();
                 moleTile = (byte)filteredRange[rand.nextInt(8)];
-                //moleTile = (byte)rand.nextInt(9);
                 round++;
 
                 if(round < 1)
